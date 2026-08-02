@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vasilev Digital Security — Custody Architecture &amp; Controls Review</title>
+<meta name="description" content="Independent custody architecture design and annual controls review for UK companies and private clients holding bitcoin. We hold no keys, at any time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#FFFFFF;
+    --ink-soft:#D4D4D4;
+    --paper:#000000;
+    --paper-raised:#121212;
+    --rule:#3A3A3A;
+    --rule-soft:#262626;
+    --seal:#F7931A;
+    --seal-soft:#FFAD52;
+    --slate:#F7931A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Source Serif 4',Georgia,serif;
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  nav, .btn, .logo-mark{font-family:'Inter',sans-serif;}
+  .justify{text-align:justify;hyphens:auto;}
+  .chapter-num{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:3.6rem;
+    line-height:1;
+    color:var(--rule);
+    display:block;
+    margin-bottom:2px;
+  }
+  a{color:var(--slate);}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--seal);outline-offset:3px;}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:0 32px;}
+
+  /* ===== Header ===== */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--rule-soft);
+  }
+  .header-inner{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;max-width:1040px;margin:0 auto;}
+  .logo{display:flex;align-items:center;}
+  .logo-mark{height:66px;width:auto;display:block;}
+  .logo-mark text{font-family:Elephant,'Fraunces',Georgia,serif;}
+  nav{display:flex;gap:22px;font-size:0.85rem;letter-spacing:0.03em;flex-shrink:0;}
+  nav a{color:var(--seal);text-decoration:none;text-transform:uppercase;font-weight:500;white-space:nowrap;flex-shrink:0;}
+  nav a:hover{color:var(--seal-soft);}
+  .nav-toggle{display:none;background:none;border:none;font-size:1.4rem;color:var(--ink);cursor:pointer;}
+
+  /* ===== Hero ===== */
+  .hero{
+    padding:96px 0 88px;
+    max-width:760px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--seal);
+    margin-bottom:22px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--seal);}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:clamp(2.3rem,4.6vw,3.6rem);
+    line-height:1.08;
+    letter-spacing:-0.01em;
+    margin-bottom:26px;
+    color:var(--seal);
+  }
+  h1 em{font-style:italic;color:var(--seal);}
+  .hero-sub{
+    font-size:1.08rem;
+    color:var(--ink-soft);
+    max-width:46ch;
+    margin-bottom:34px;
+  }
+  .cta-row{display:flex;gap:16px;flex-wrap:wrap;}
+  .btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.8rem;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:14px 26px;
+    border-radius:2px;
+    text-decoration:none;
+    display:inline-block;
+    border:1px solid var(--ink);
+    transition:all 0.15s ease;
+  }
+  .btn-primary{background:var(--ink);color:var(--paper);}
+  .btn-primary:hover{background:var(--seal);border-color:var(--seal);}
+  .btn-ghost{color:var(--ink);border-color:var(--rule);}
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  /* ===== Section shell ===== */
+  section{padding:78px 0;border-top:1px solid var(--rule-soft);}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:44px;gap:24px;flex-wrap:wrap;}
+  .section-num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;color:var(--seal);letter-spacing:0.08em;
+    margin-bottom:10px;display:block;
+  }
+  h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:clamp(1.6rem,2.6vw,2.1rem);
+    letter-spacing:-0.01em;
+  }
+  .section-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    max-width:26ch;
+    text-align:right;
+  }
+
+  /* ===== Boundary (bright lines) ===== */
+  .lines{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule-soft);border:1px solid var(--rule-soft);}
+  .line-item{background:var(--paper-raised);padding:26px 28px;display:flex;gap:18px;}
+  .line-item .n{font-family:'IBM Plex Mono',monospace;color:var(--seal);font-size:0.85rem;flex-shrink:0;padding-top:2px;}
+  .line-item p{font-size:0.94rem;color:var(--ink-soft);}
+  .line-item strong{color:var(--seal);font-weight:600;}
+  strong{color:var(--seal);}
+
+  /* ===== Services ===== */
+  .services{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--rule-soft);}
+  .service{padding:40px 38px;position:relative;}
+  .service + .service{border-left:1px solid var(--rule-soft);}
+  .service-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--seal);margin-bottom:14px;
+  }
+  .service h3{font-family:'Fraunces',serif;font-weight:500;font-size:1.35rem;margin-bottom:14px;}
+  .service p{color:var(--ink-soft);font-size:0.95rem;margin-bottom:20px;}
+  .service ul{list-style:none;}
+  .service li{
+    font-size:0.9rem;color:var(--ink-soft);
+    padding:10px 0;border-top:1px solid var(--rule-soft);
+    display:flex;gap:10px;
+  }
+  .service li::before{content:"—";color:var(--seal);flex-shrink:0;}
+
+  /* ===== Engagement timeline ===== */
+  .timeline{position:relative;padding-left:2px;}
+  .tl-item{
+    display:grid;grid-template-columns:110px 1fr;gap:28px;
+    padding:26px 0;border-top:1px solid var(--rule-soft);
+  }
+  .tl-item:last-child{border-bottom:1px solid var(--rule-soft);}
+  .tl-week{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--seal);padding-top:3px;}
+  .tl-body h4{font-family:'Fraunces',serif;font-weight:500;font-size:1.08rem;margin-bottom:8px;}
+  .tl-body p{color:var(--ink-soft);font-size:0.92rem;max-width:60ch;}
+
+  /* ===== Independence ===== */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:40px;}
+  .compare-col{padding:30px 32px;border:1px solid var(--rule-soft);background:var(--paper-raised);}
+  .compare-col.accent{border-color:var(--seal);}
+  .compare-col h4{font-family:'Fraunces',serif;font-size:1.1rem;margin-bottom:16px;}
+  .compare-col.accent h4{color:var(--seal);}
+  .compare-col ul{list-style:none;}
+  .compare-col li{font-size:0.9rem;color:var(--ink-soft);padding:8px 0;}
+
+  /* ===== Contact / footer ===== */
+  .contact{text-align:center;padding-top:90px;padding-bottom:60px;}
+  .contact h2{margin-bottom:18px;}
+  .contact p{color:var(--ink-soft);max-width:50ch;margin:0 auto 34px;}
+  footer{border-top:1px solid var(--rule-soft);padding:34px 0;}
+  .footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--ink-soft);}
+  .footer-inner a{color:var(--ink-soft);}
+
+  @media (max-width:820px){
+    nav{display:none;}
+    .hero{padding:56px 0 48px;}
+    .services,.compare{grid-template-columns:1fr;}
+    .service + .service{border-left:none;border-top:1px solid var(--rule-soft);}
+    .lines{grid-template-columns:1fr;}
+    .tl-item{grid-template-columns:1fr;gap:8px;}
+    .section-head{flex-direction:column;align-items:flex-start;}
+    .section-tag{text-align:left;}
+    .chapter-num{font-size:2.6rem;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo" role="img" aria-label="Vasilev Digital Security">
+      <svg class="logo-mark" viewBox="135 180 580 250" xmlns="http://www.w3.org/2000/svg">
+        <text xml:space="preserve" x="173.98016" y="365.78491" font-size="229.88px" fill="var(--seal)" transform="scale(0.95189195,1.0505394)">V</text>
+        <text xml:space="preserve" x="341.75348" y="273.40274" font-size="88.1944px" fill="var(--seal)">Digital</text>
+        <text xml:space="preserve" x="350.06659" y="370.24728" font-size="85.3595px" fill="var(--ink)" transform="scale(0.96785694,1.0332106)">Security</text>
+      </svg>
+    </div>
+    <nav>
+      <a href="#boundary">The Boundary</a>
+      <a href="#services">Services</a>
+      <a href="#engagement">Engagement</a>
+      <a href="#risk">Why It Matters</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="hero" style="border-top:none;">
+    <div>
+      <div class="eyebrow">UK · Independent Bitcoin Security</div>
+      <h1>Stop being one mistake away from losing your funds. <em>No one person, no one device, can ever move your funds alone.</em></h1>
+      <p class="hero-sub">A faulty wallet, a hacker, or one person acting in bad faith — alone, none of them can touch a system built the way we design.</p>
+      <div class="cta-row">
+        <a href="#contact" class="btn btn-primary">Start a conversation</a>
+        <a href="#boundary" class="btn btn-ghost">Read the boundary</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="boundary">
+    <div class="section-head">
+      <div>
+        <span class="chapter-num">01</span>
+        <h2>The regulatory boundary</h2>
+      </div>
+      <p class="section-tag">The defining constraint of the firm, not a footnote — written into every engagement letter as non-waivable.</p>
+    </div>
+    <div class="lines">
+      <div class="line-item"><span class="n">01</span><p>The firm <strong>never generates, views, or stores</strong> a seed phrase or private key.</p></div>
+      <div class="line-item"><span class="n">02</span><p>Clients generate all key material themselves, on their own devices. <strong>The firm instructs; the client executes.</strong></p></div>
+      <div class="line-item"><span class="n">03</span><p>The firm is <strong>never a named keyholder</strong>, signatory, or authorised person on any client vault or wallet.</p></div>
+      <div class="line-item"><span class="n">04</span><p>The firm <strong>never possesses a signing device</strong>, never co-signs, never broadcasts a transaction.</p></div>
+      <div class="line-item"><span class="n">05</span><p>The firm <strong>never takes possession</strong> of client bitcoin — for any period, for any reason, including testing.</p></div>
+      <div class="line-item"><span class="n">06</span><p>The firm does not advise on <strong>whether</strong> to acquire, dispose of, or hold bitcoin. That is investment advice — separately regulated.</p></div>
+    </div>
+  </section>
+
+  <section id="services">
+    <div class="section-head">
+      <div>
+        <span class="chapter-num">02</span>
+        <h2>What the firm does</h2>
+      </div>
+      <p class="section-tag">Two lines of engagement — one recurring product underneath both.</p>
+    </div>
+    <div class="services">
+      <div class="service">
+        <div class="service-label">Line A — UK Companies</div>
+        <h3>Custody architecture &amp; controls review</h3>
+        <p>For finance directors and boards holding bitcoin on the balance sheet, who need to answer: who can move it, under what authority, evidenced how.</p>
+        <ul>
+          <li>Multisig quorum design mapped to the board authorisation matrix</li>
+          <li>Segregation of duties analysis — who signs, approves, reconciles</li>
+          <li>Board custody policy &amp; incident response documentation</li>
+          <li>Independent observation of the key ceremony</li>
+          <li>Annual controls review &amp; live recovery drill</li>
+          <li>Audit support — evidence pack for external auditors</li>
+        </ul>
+      </div>
+      <div class="service">
+        <div class="service-label">Line B — Private Clients</div>
+        <h3>Inheritance &amp; recovery architecture</h3>
+        <p>A 2-of-3 multisig scheme for high-net-worth individuals, with the client's own solicitor holding the third key as client property — under their existing regulatory framework, not ours.</p>
+        <ul>
+          <li>Threat model &amp; key placement design</li>
+          <li>Guided setup — client generates, client executes</li>
+          <li>Sealed Recovery Dossier for a non-technical executor</li>
+          <li>Coordination with the client's solicitor and will</li>
+          <li>Annual recovery drill &amp; dossier reissue</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="engagement">
+    <div class="section-head">
+      <div>
+        <span class="chapter-num">03</span>
+        <h2>How an engagement runs</h2>
+      </div>
+      <p class="section-tag">Documents, checklists, witnessed procedures, and a dated certificate — repeated annually.</p>
+    </div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-week">WEEK 01</div>
+        <div class="tl-body">
+          <h4>Discovery</h4>
+          <p>A current-state risk assessment: how much bitcoin, where it sits today, who could move it, what the board minutes say. This document alone is usually the point where the risk becomes visible.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">WEEK 02</div>
+        <div class="tl-body">
+          <h4>Design</h4>
+          <p>A multisig design mapped to existing board authorisation limits, a signer matrix, a hardware list the client purchases themselves, and geographic placement.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">WEEK 03</div>
+        <div class="tl-body">
+          <h4>The key ceremony</h4>
+          <p>A written script executed entirely by the client's own people, on their own devices. The firm observes and records — never touches a device — then issues a signed observation report.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">WEEK 04</div>
+        <div class="tl-body">
+          <h4>Documentation &amp; close</h4>
+          <p>Board custody policy, recovery runbook, and incident procedure delivered as a bound pack. Engagement closed.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">+12 MO</div>
+        <div class="tl-body">
+          <h4>The annual drill</h4>
+          <p>A test signature from every key, observed and verified, the certificate reissued, the retainer invoiced. Repeated every year.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="risk">
+    <div class="section-head">
+      <div>
+        <span class="chapter-num">04</span>
+        <h2>Why this matters now</h2>
+      </div>
+      <p class="section-tag">Self-custody removes one risk. It does not remove the risk that no one checked the setup.</p>
+    </div>
+
+    <p class="justify" style="max-width:66ch;margin-bottom:22px;">
+      On 30–31 July 2026, roughly 594 bitcoin — worth around $38 million — was swept from about 500 wallets in a single 25-minute window. The cause was not a stolen device or a phished password. It traced to a firmware fault, quietly present since March 2021, in a widely trusted hardware wallet: a broken check meant the device's true random-number generator was silently disabled during key generation, so it fell back to a predictable software substitute seeded from the device's own serial number and clock. Anyone who generated a seed on the affected firmware had, without knowing it, a guessable key.
+    </p>
+    <p class="justify" style="max-width:66ch;margin-bottom:34px;">
+      Every wallet drained held a single signature. There was no second key required to move the funds, no second person who had to approve the transaction, and no independent process that had ever reviewed whether the setup was sound. The device did exactly what it was designed to do — the flaw was invisible to the person holding it, and would have stayed invisible indefinitely if it had never been exploited.
+    </p>
+
+    <div class="lines" style="margin-bottom:36px;">
+      <div class="line-item"><span class="n">01</span><p><strong>~$38m</strong> moved in <strong>25 minutes</strong>, across roughly 500 wallets, once the flaw was found.</p></div>
+      <div class="line-item"><span class="n">02</span><p>The fault was live for <strong>over five years</strong> before anyone outside the manufacturer noticed.</p></div>
+      <div class="line-item"><span class="n">03</span><p>Every affected wallet was <strong>single-signature</strong> — one key, one point of failure, nothing to check it.</p></div>
+      <div class="line-item"><span class="n">04</span><p>No hardware manufacturer, however well regarded, is a substitute for an <strong>independent review</strong> of the setup.</p></div>
+    </div>
+
+    <p class="justify" style="max-width:66ch;">
+      This is not an isolated case. Hardware wallets fail in ways their owners cannot see for themselves — firmware bugs, weak randomness, supply-chain tampering, and manufacturers who have previously exposed customer data to phishing and physical targeting. A single device, trusted on reputation alone, is a single point of failure. A multisig structure with a documented signer matrix, a witnessed key ceremony, and an annual verified drill does not make any individual component infallible — it makes sure that <em>one</em> flawed component, in one device, from one manufacturer, is never enough on its own to lose everything.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <span class="chapter-num">05</span>
+        <h2>Why independence matters</h2>
+      </div>
+      <p class="section-tag">A structural difference, not a marketing one.</p>
+    </div>
+    <div class="compare">
+      <div class="compare-col">
+        <h4>An outsourced custodian</h4>
+        <ul>
+          <li>Holds the keys on your behalf</li>
+          <li>Reviews its own controls</li>
+          <li>Introduces a new counterparty and concentration risk</li>
+          <li>Cannot be independently audited against itself</li>
+        </ul>
+      </div>
+      <div class="compare-col accent">
+        <h4>An independent governance review</h4>
+        <ul>
+          <li>Never holds the keys — nothing to lose, nothing to freeze</li>
+          <li>Reviews controls the client and their people actually operate</li>
+          <li>No new counterparty introduced into the custody chain</li>
+          <li>Structurally able to say no to the client — the review means something</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact" style="border-top:1px solid var(--rule-soft);">
+    <span class="chapter-num" style="text-align:center;">06</span>
+    <h2>Start with a conversation, not a proposal</h2>
+    <p>Tell us how bitcoin is currently held, who can move it, and what keeps the finance function awake at night. We'll tell you plainly whether an engagement makes sense.</p>
+    <a href="mailto:info@vasilevsecurity.com" class="btn btn-primary">info@vasilevsecurity.com</a>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap footer-inner">
+    <span>© 2026 Vasilev Digital Security Ltd — Registered in England &amp; Wales</span>
+    <a href="mailto:info@vasilevsecurity.com">info@vasilevsecurity.com</a>
+  </div>
+</footer>
+
+
+
+</body></html>
